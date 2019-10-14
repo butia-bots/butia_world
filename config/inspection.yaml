@@ -1,8 +1,26 @@
 map:
-  points:
-    entry_point:
-        pose: [10, 10, 10, 1, 1, 1, 1]
-    examination_point:
-        pose: [11, 11, 11, 2, 2, 2, 2]
-    exit_point:
-        pose: [12, 12, 12, 3, 3, 3, 3]
+  targets:
+    entry:
+        px: 10
+        py: 10
+        pz: 10
+        ox: 1
+        oy: 1
+        oz: 1
+        ow: 1
+    examination:
+        px: 20
+        py: 20
+        pz: 20
+        ox: 2
+        oy: 2
+        oz: 2
+        ow: 2
+    exit:
+        px: 30
+        py: 30
+        pz: 30
+        ox: 3
+        oy: 3
+        oz: 3
+        ow: 3
