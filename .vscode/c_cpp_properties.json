@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/igormaurell/Workspace/athome/catkin_ws/devel/include",
+        "/opt/ros/melodic/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/butia_vision_bridge/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/darknet_ros/darknet_ros/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/image2kinect/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/image_server/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/object_recognition/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/people_tracking/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/butia_vision/segmentation/include",
+        "/home/igormaurell/Workspace/athome/catkin_ws/src/usb_cam/include",
+        "/usr/include"
+      ],
+      "name": "Linux"
+    }
+  ]
+}
