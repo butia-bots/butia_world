@@ -1,11 +1,8 @@
 map:
   points:
     entry_point:
-        position: [10, 10, 10]
-        orientation: [1, 1, 1, 1]
+        pose: [10, 10, 10, 1, 1, 1, 1]
     examination_point:
-        position: [11, 11, 11]
-        orientation: [2, 2, 2, 2]
+        pose: [11, 11, 11, 2, 2, 2, 2]
     exit_point:
-        position: [12, 12, 12]
-        orientation: [3, 3, 3, 3]
+        pose: [12, 12, 12, 3, 3, 3, 3]
