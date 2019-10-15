@@ -2,3 +2,4 @@ from butia_world.plugins.world_plugin import WorldPlugin
 from butia_world.plugins.heartbeat_writer import HeartbeatWriterPlugin
 from butia_world.plugins.heartbeat_reader import HeartbeatReaderPlugin
 from butia_world.plugins.map_writer import MapWriterPlugin
+from butia_world.plugins.viewer_reader import ViewerReaderPlugin
