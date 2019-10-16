@@ -12,5 +12,7 @@ if __name__ == '__main__':
                         'distance_threshold' : 0.1
                     }
                    }
-  plugin = RecognitionWriterPlugin('/butia_vision/pt/people_tracking3d', check_function)
+                     
+  topic = rospy.get_param('/butia_world/people_tracking/topic', '/butia_vision/pt/people_tracking3d')
+  plugin = RecognitionWriterPlugin(topic, check_function)
   plugin.run()
