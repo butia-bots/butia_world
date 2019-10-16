@@ -1,0 +1,5 @@
+<launch>
+    <rosparam file="$(find butia_world)/config/redis.yaml" ns="redis" command="load" />
+    <node pkg="butia_world" type="people_tracking_writer.py" name="people_tracking_writer" output="screen"> 
+    </node>
+</launch>
