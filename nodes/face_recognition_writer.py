@@ -11,5 +11,6 @@ if __name__ == '__main__':
                     'kwargs' : {
                     }
                    }
-  plugin = RecognitionWriterPlugin('/butia_vision/fr/face_recognition3d', check_function)
+  topic = rospy.get_param('/butia_world/face_recognition/topic', '/butia_vision/fr/face_recognition3d')
+  plugin = RecognitionWriterPlugin(topic, check_function)
   plugin.run()
