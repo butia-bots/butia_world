@@ -1,0 +1,5 @@
+<launch>
+    <rosparam file="$(find butia_world)/config/redis.yaml" ns="redis" command="load" />
+    <node pkg="butia_world" type="face_recognition_writer.py" name="face_recognition_writer" output="screen"> 
+    </node>
+</launch>
