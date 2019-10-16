@@ -5,7 +5,7 @@ from butia_world.plugins import *
 
 if __name__ == '__main__':
   rospy.init_node('object_recognition_writer')
-  distance_threshold = rospy.get_param('/butia_world/distance_threshold', 0.2)
+  distance_threshold = rospy.get_param('/butia_world/object_recognition/distance_threshold', 0.2)
   check_function = {
                     'function' : check_candidates_by_distance,
                     'args' : (),

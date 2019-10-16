@@ -29,9 +29,9 @@ def check_candidates_by_distance(description, candidate_keys, r, distance_thresh
     pose.orientation.w = float(db_pose['ow'])
 
     distance = euclidian_distance(description.pose.pose.position, pose.position)
-
     if distance < distance_threshold:
-      return key.replace('/pose', '')
+      n_key = key.replace('/pose', '')
+      return n_key
   
   return None
 
