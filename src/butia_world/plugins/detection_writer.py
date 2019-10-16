@@ -1,8 +1,9 @@
 import uuid
 import rospy
 import tf
+import redis
 from std_msgs.msg import Header
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Position, Pose, PoseStamped
 from butia_vision_msgs.msg import Recognitions3D, Description3D
 
 from .world_plugin import WorldPlugin
@@ -15,6 +16,9 @@ class DetectionWriterPlugin(WorldPlugin):
   
   def run(self):
     pass
+
+  def _euclidian_distance(self, p1: Position, p2: Position):
+    sums = ((p2.x - p1.x)**2, (p2.y - p1.y)**2)
 
   def _must_update(self, image_header: Header, description: Description3D):
     pose_stamped = PoseStamped()
@@ -34,17 +38,18 @@ class DetectionWriterPlugin(WorldPlugin):
   
   def _save_description(self, description: Description3D):
     with self.r.pipeline() as pipe:
-      description_id = description.label_class + self._generate_uid()
-      pipe.hmset(description_id + '/position', {
-        'x': description.pose.pose.position.x,
-        'y': description.pose.pose.position.y,
-        'z': description.pose.pose.position.z
-      })
-      pipe.hmset(description_id + '/orientation', {
-        'x': description.pose.pose.orientation.x,
-        'y': description.pose.pose.orientation.y,
-        'z': description.pose.pose.orientation.z,
-        'w': description.pose.pose.orientation.w
+      description_id = '{label}/{id}'.format(
+        label=description.label_class,
+        id=self._generate_uid()
+      )
+      pipe.hmset(description_id + '/pose', {
+        'px': description.pose.pose.position.x,
+        'py': description.pose.pose.position.y,
+        'pz': description.pose.pose.position.z,
+        'ox': description.pose.pose.orientation.x,
+        'oy': description.pose.pose.orientation.y,
+        'oz': description.pose.pose.orientation.z,
+        'ow': description.pose.pose.orientation.w
       })
       pipe.hmset(description_id + '/color', {
         'r': description.color.r,
