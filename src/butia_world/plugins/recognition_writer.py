@@ -45,10 +45,11 @@ def check_candidates_by_label(description, candidate_keys, r):
 
 class RecognitionWriterPlugin(WorldPlugin):
 
-  def __init__(self, topic, check_function):
+  def __init__(self, topic, check_function, to_map = True):
     WorldPlugin.__init__(self)
     self.topic = topic
     self.check_function = check_function
+    self.to_map = to_map
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
@@ -118,4 +119,6 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
+      if self.to_map:
+        image_header, description = self._to_map(image_header, description)  
       self._save_description(image_header, description)

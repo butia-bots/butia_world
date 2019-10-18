@@ -9,10 +9,10 @@ if __name__ == '__main__':
                     'function' : check_candidates_by_label,
                     'args' : (),
                     'kwargs' : {
-                        'distance_threshold' : 0.1
                     }
                    }
                      
   topic = rospy.get_param('/butia_world/people_tracking/topic', '/butia_vision/pt/people_tracking3d')
-  plugin = RecognitionWriterPlugin(topic, check_function)
+  to_map = rospy.get_param('/butia_world/people_tracking/to_map', True)
+  plugin = RecognitionWriterPlugin(topic, check_function, to_map)
   plugin.run()

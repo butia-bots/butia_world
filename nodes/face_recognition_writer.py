@@ -12,5 +12,6 @@ if __name__ == '__main__':
                     }
                    }
   topic = rospy.get_param('/butia_world/face_recognition/topic', '/butia_vision/fr/face_recognition3d')
-  plugin = RecognitionWriterPlugin(topic, check_function)
+  to_map = rospy.get_param('/butia_world/face_recognition/to_map', True)
+  plugin = RecognitionWriterPlugin(topic, check_function, to_map)
   plugin.run()
