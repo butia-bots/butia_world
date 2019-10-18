@@ -13,7 +13,8 @@ class ViewerReaderPlugin(WorldPlugin):
       pose_keys = self.r.keys('*/pose')
       pose = Pose()
       for key in pose_keys:
-        link = key.split('/')[-2]
+        link = key.replace('/pose', '')
+        print(link)
         db_pose = self.r.hgetall(key)
         pose.position.x = float(db_pose['px'])
         pose.position.y = float(db_pose['py'])
