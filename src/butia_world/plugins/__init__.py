@@ -4,3 +4,4 @@ from butia_world.plugins.heartbeat_reader import HeartbeatReaderPlugin
 from butia_world.plugins.map_writer import MapWriterPlugin
 from butia_world.plugins.viewer_reader import ViewerReaderPlugin
 from butia_world.plugins.recognition_writer import *
+from butia_world.plugins.pose_reader import PoseReaderPlugin
