@@ -118,7 +118,7 @@ class RecognitionWriterPlugin(WorldPlugin):
         'a': description.color.a
       })
       pipe.execute()
-    return d_id.split('/')[-1]
+    return d_id
 
   def _save_target(self, uid, pose):
     dx = pose.position.x
@@ -147,7 +147,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     npose.orientation.z = orientation_l[2]
     npose.orientation.w = orientation_l[3]
 
-    key = 'target/' + uid + '/' + 'pose'
+    key = 'target/' + str(uid) + '/pose'
     self.r.hmset(key, {
         'px': npose.position.x,
         'py': npose.position.y,
