@@ -1,0 +1,3 @@
+face_recognition:
+  topic: /butia_vision/fr/face_recognition3d
+  to_map: false

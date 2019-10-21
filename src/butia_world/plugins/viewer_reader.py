@@ -13,7 +13,7 @@ class ViewerReaderPlugin(WorldPlugin):
       pose_keys = self.r.keys('*/pose')
       pose = Pose()
       for key in pose_keys:
-        link = key.split('/')[-2]
+        link = key.replace('/pose', '')
         db_pose = self.r.hgetall(key)
         pose.position.x = float(db_pose['px'])
         pose.position.y = float(db_pose['py'])
@@ -25,7 +25,5 @@ class ViewerReaderPlugin(WorldPlugin):
 
         p = pose.position
         o = pose.orientation
-        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link, "map")
-
-        #print(db_pose)
+        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link, 'kinect2_rgb_optical_frame')
       rate.sleep()

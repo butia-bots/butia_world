@@ -10,6 +10,7 @@ project(butia_world)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  butia_world_msgs
   tf
 )
 
