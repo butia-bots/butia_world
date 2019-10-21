@@ -6,7 +6,9 @@ from std_msgs.msg import Header
 from geometry_msgs.msg import Point, Pose, PoseStamped
 from butia_vision_msgs.msg import Recognitions3D, Description3D
 
-from math import sqrt
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+
+from math import sqrt, atan2, cos, sin, pi
 
 from .world_plugin import WorldPlugin
 
@@ -45,17 +47,18 @@ def check_candidates_by_label(description, candidate_keys, r):
 
 class RecognitionWriterPlugin(WorldPlugin):
 
-  def __init__(self, topic, check_function, to_map = True):
+  def __init__(self, topic, check_function, approach_distance = 1, to_map = True):
     WorldPlugin.__init__(self)
     self.topic = topic
     self.check_function = check_function
+    self.approach_distance = approach_distance
     self.to_map = to_map
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
     rospy.spin()
 
-  def _must_update(self, image_header, description):
+  def _must_update(self, description):
     candidate_keys = self.r.keys(pattern=description.label_class + '*')
     if len(candidate_keys) == 0:
       return None
@@ -64,7 +67,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     return self.check_function['function'](*self.check_function['args'], **self.check_function['kwargs'])
     
   
-  def _to_map(self, image_header, description):
+  def _to_link(self, image_header, description, link='map'):
     pose_stamped = PoseStamped()
     pose_stamped.header = image_header
     pose_stamped.pose.position.x = description.pose.pose.position.x
@@ -77,7 +80,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     
     pose_stamped_map = PoseStamped()
     t = tf.TransformerROS()
-    pose_stamped_map = t.transformPose('map', pose_stamped)
+    pose_stamped_map = t.transformPose(link, pose_stamped)
 
     new_header = pose_stamped_map.header
     new_description = description
@@ -88,8 +91,8 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _generate_uid(self):
     return str(uuid.uuid4())
   
-  def _save_description(self, image_header, description):
-    d_id = self._must_update(image_header, description)
+  def _save_description(self, description):
+    d_id = self._must_update(description)
 
     with self.r.pipeline() as pipe:
       if d_id:
@@ -115,10 +118,52 @@ class RecognitionWriterPlugin(WorldPlugin):
         'a': description.color.a
       })
       pipe.execute()
+    return d_id.split('/')[-1]
+
+  def _save_target(self, uid, pose):
+    dx = pose.position.x
+    dy = pose.position.y
+    angle = atan2(dy, dx)
+    distance = sqrt(dx**2 + dy**2)
+    distance -= self.approach_distance
+
+    nx = distance*cos(angle)
+    ny = distance*sin(angle)
+    nz = 0
+
+    orientation = pose.orientation
+    orientation_l = [orientation.x, orientation.y, orientation.z, orientation.w]
+    (roll, pitch, yaw) = euler_from_quaternion(orientation_l)
+    yaw = yaw - pi
+
+    orientation_l = quaternion_from_euler(roll, pitch, yaw)
+
+    npose = pose
+    npose.position.x = nx
+    npose.position.y = ny
+    npose.position.z = nz
+    npose.orientation.x = orientation_l[0]
+    npose.orientation.y = orientation_l[1]
+    npose.orientation.z = orientation_l[2]
+    npose.orientation.w = orientation_l[3]
+
+    key = 'target/' + uid + '/' + 'pose'
+    self.r.hmset(key, {
+        'px': npose.position.x,
+        'py': npose.position.y,
+        'pz': npose.position.z,
+        'ox': npose.orientation.x,
+        'oy': npose.orientation.y,
+        'oz': npose.orientation.z,
+        'ow': npose.orientation.w
+      })
+
 
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
       if self.to_map:
-        image_header, description = self._to_map(image_header, description)  
-      self._save_description(image_header, description)
+        image_header, description = self._to_link(image_header, description, link='map')  
+      uid = self._save_description(description)
+      #image_header, description = self._to_link(image_header, description, link='base_link')
+      self._save_target(uid, description.pose.pose)
