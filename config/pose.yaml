@@ -1,4 +1,4 @@
-map:
+pose:
   targets:
     fbot:
         px: 5.94535

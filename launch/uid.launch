@@ -1,5 +1,0 @@
-<launch>
-    <rosparam file="$(find butia_world)/config/redis.yaml" ns="redis" command="load" />
-    <node pkg="butia_world" type="uid_reader.py" name="uid_reader" output="screen"> 
-    </node>
-</launch>
