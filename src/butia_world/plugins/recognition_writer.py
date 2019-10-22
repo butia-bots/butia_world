@@ -47,12 +47,12 @@ def check_candidates_by_label(description, candidate_keys, r):
 
 class RecognitionWriterPlugin(WorldPlugin):
 
-  def __init__(self, topic, check_function, approach_distance = 1, to_map = True):
+  def __init__(self, topic, check_function, approach_distance = 1):
     WorldPlugin.__init__(self)
     self.topic = topic
     self.check_function = check_function
     self.approach_distance = approach_distance
-    self.to_map = to_map
+    self.transformer = tf.TransformerROS()
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
@@ -79,8 +79,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     pose_stamped.pose.orientation.w = description.pose.pose.orientation.w
     
     pose_stamped_map = PoseStamped()
-    t = tf.TransformerROS()
-    pose_stamped_map = t.transformPose(link, pose_stamped)
+    pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
 
     new_header = pose_stamped_map.header
     new_description = description
@@ -118,7 +117,7 @@ class RecognitionWriterPlugin(WorldPlugin):
         'a': description.color.a
       })
       pipe.execute()
-    return d_id.split('/')[-1]
+    return d_id
 
   def _save_target(self, uid, pose):
     dx = pose.position.x
@@ -147,7 +146,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     npose.orientation.z = orientation_l[2]
     npose.orientation.w = orientation_l[3]
 
-    key = 'target/' + uid + '/' + 'pose'
+    key = 'target/' + str(uid) + '/pose'
     self.r.hmset(key, {
         'px': npose.position.x,
         'py': npose.position.y,
@@ -158,12 +157,10 @@ class RecognitionWriterPlugin(WorldPlugin):
         'ow': npose.orientation.w
       })
 
-
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
-      if self.to_map:
-        image_header, description = self._to_link(image_header, description, link='map')  
+      #image_header, description = self._to_link(image_header, description, link=self.fixed_frame)  
       uid = self._save_description(description)
       #image_header, description = self._to_link(image_header, description, link='base_link')
       self._save_target(uid, description.pose.pose)

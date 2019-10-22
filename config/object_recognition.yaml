@@ -1,4 +1,3 @@
 object_recognition:
   topic: /butia_vision/or/object_recognition3d
   distance_threshold: 1.0
-  to_map: false
