@@ -35,7 +35,7 @@ class PosePlugin(WorldPlugin):
   def getClosestKey(self, req):
     query = req.query
     keys = self.r.keys(query)
-    keys = list(filter(lambda x: '/pose' in x, keys))
+    keys = list(filter(lambda x: '/pose' in x and 'target' not in x, keys))
 
     min_distance = float('inf')
     min_key = None

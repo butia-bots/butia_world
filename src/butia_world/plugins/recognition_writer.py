@@ -70,7 +70,6 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _to_link(self, image_header, description, link='map'):
     pose_stamped = PoseStamped()
     pose_stamped.header = image_header
-    rospy.loginfo(image_header)
     pose_stamped.pose.position.x = description.pose.pose.position.x
     pose_stamped.pose.position.y = description.pose.pose.position.y
     pose_stamped.pose.position.z = description.pose.pose.position.z
