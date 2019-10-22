@@ -14,6 +14,5 @@ if __name__ == '__main__':
                     }
                    }
   topic = rospy.get_param('/butia_world/object_recognition/topic', '/butia_vision/or/object_recognition3d')
-  to_map = rospy.get_param('/butia_world/object_recognition/to_map', True)
-  plugin = RecognitionWriterPlugin(topic, check_function, to_map = to_map)
+  plugin = RecognitionWriterPlugin(topic, check_function)
   plugin.run()

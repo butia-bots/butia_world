@@ -13,6 +13,6 @@ if __name__ == '__main__':
                    }
                      
   topic = rospy.get_param('/butia_world/people_tracking/topic', '/butia_vision/pt/people_tracking3d')
-  to_map = rospy.get_param('/butia_world/people_tracking/to_map', True)
-  plugin = RecognitionWriterPlugin(topic, check_function, to_map = to_map)
+  fixed_frame = rospy.get_param('/butia_world/fixed_frame', 'map')
+  plugin = RecognitionWriterPlugin(topic, check_function)
   plugin.run()

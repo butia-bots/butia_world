@@ -47,12 +47,12 @@ def check_candidates_by_label(description, candidate_keys, r):
 
 class RecognitionWriterPlugin(WorldPlugin):
 
-  def __init__(self, topic, check_function, approach_distance = 1, to_map = True):
+  def __init__(self, topic, check_function, approach_distance = 1):
     WorldPlugin.__init__(self)
     self.topic = topic
     self.check_function = check_function
     self.approach_distance = approach_distance
-    self.to_map = to_map
+    self.transformer = tf.TransformerROS()
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
@@ -70,6 +70,7 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _to_link(self, image_header, description, link='map'):
     pose_stamped = PoseStamped()
     pose_stamped.header = image_header
+    rospy.loginfo(image_header)
     pose_stamped.pose.position.x = description.pose.pose.position.x
     pose_stamped.pose.position.y = description.pose.pose.position.y
     pose_stamped.pose.position.z = description.pose.pose.position.z
@@ -79,8 +80,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     pose_stamped.pose.orientation.w = description.pose.pose.orientation.w
     
     pose_stamped_map = PoseStamped()
-    t = tf.TransformerROS()
-    pose_stamped_map = t.transformPose(link, pose_stamped)
+    pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
 
     new_header = pose_stamped_map.header
     new_description = description
@@ -158,12 +158,10 @@ class RecognitionWriterPlugin(WorldPlugin):
         'ow': npose.orientation.w
       })
 
-
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
-      if self.to_map:
-        image_header, description = self._to_link(image_header, description, link='map')  
+      #image_header, description = self._to_link(image_header, description, link=self.fixed_frame)  
       uid = self._save_description(description)
       #image_header, description = self._to_link(image_header, description, link='base_link')
       self._save_target(uid, description.pose.pose)
