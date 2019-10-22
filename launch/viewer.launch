@@ -1,5 +1,5 @@
 <launch>
-    <rosparam file="$(find butia_world)/config/redis.yaml" ns="redis" command="load" />
+    <rosparam file="$(find butia_world)/config/plugin.yaml" ns="butia_world" command="load" />
     <node pkg="butia_world" type="viewer_reader.py" name="viewer_reader" output="screen"> 
     </node>
 </launch>

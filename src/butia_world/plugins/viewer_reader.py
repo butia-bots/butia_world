@@ -25,5 +25,5 @@ class ViewerReaderPlugin(WorldPlugin):
 
         p = pose.position
         o = pose.orientation
-        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link, 'kinect2_rgb_optical_frame')
+        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link, self.fixed_frame)
       rate.sleep()
