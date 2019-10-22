@@ -53,12 +53,17 @@ class PosePlugin(WorldPlugin):
       if distance < min_distance:
         min_distance = distance
         min_key = key
+    
+    min_key = min_key.replace('/pose', '')
+    rospy.loginfo("Key: " + min_key)
 
     return GetKeyResponse(min_key)
 
   def getPose(self, req):
     key = req.key
     pose = self.readPose(key)
+
+    rospy.loginfo(pose)
 
     return pose
 
