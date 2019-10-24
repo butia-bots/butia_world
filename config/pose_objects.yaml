@@ -1,0 +1,18 @@
+pose:
+  targets:
+    shelf:
+        px: -6.3627
+        py: 0.5164
+        pz: 0
+        ox: 0
+        oy: 0
+        oz: -0.1618
+        ow: 0.9868
+    exit:
+        px: 1.44
+        py: -1.0387
+        pz: 0
+        ox: 0
+        oy: 0
+        oz: -0.1967
+        ow: 0.9804
