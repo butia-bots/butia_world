@@ -1,18 +1,10 @@
 pose:
   targets:
-    fbot:
-        px: 5.94535
-        py: 16.46484
+    interview:
+        px: 3.9798
+        py: 1.1286
         pz: 0
         ox: 0
         oy: 0
-        oz: 0.599928
-        ow: 0.8005
-    nautec:
-        px: 6.07381
-        py: -5.754383
-        pz: 0
-        ox: 0
-        oy: 0
-        oz: -0.894082
-        ow: 0.447902
+        oz: -0.7912
+        ow: 0.6114
