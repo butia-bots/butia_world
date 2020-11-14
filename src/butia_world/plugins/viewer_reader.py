@@ -10,20 +10,21 @@ class ViewerReaderPlugin(WorldPlugin):
     br = tf.TransformBroadcaster()
     rate = rospy.Rate(30)
     while not rospy.is_shutdown():
-      pose_keys = self.r.keys('*/pose')
+      pose_keys = self.r.keys(b'*/pose')
       pose = Pose()
       for key in pose_keys:
-        link = key.replace('/pose', '')
+        print(key)
+        link = key.replace(b'/pose', b'')
         db_pose = self.r.hgetall(key)
-        pose.position.x = float(db_pose['px'])
-        pose.position.y = float(db_pose['py'])
-        pose.position.z = float(db_pose['pz'])
-        pose.orientation.x = float(db_pose['ox'])
-        pose.orientation.y = float(db_pose['oy'])
-        pose.orientation.z = float(db_pose['oz'])
-        pose.orientation.w = float(db_pose['ow'])
+        pose.position.x = float(db_pose[b'px'])
+        pose.position.y = float(db_pose[b'py'])
+        pose.position.z = float(db_pose[b'pz'])
+        pose.orientation.x = float(db_pose[b'ox'])
+        pose.orientation.y = float(db_pose[b'oy'])
+        pose.orientation.z = float(db_pose[b'oz'])
+        pose.orientation.w = float(db_pose[b'ow'])
 
         p = pose.position
         o = pose.orientation
-        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link, self.fixed_frame)
+        br.sendTransform((p.x, p.y, p.z), (o.x, o.y, o.z, o.w), rospy.Time.now(), link.decode('utf-8'), self.fixed_frame)
       rate.sleep()

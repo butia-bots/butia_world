@@ -18,21 +18,22 @@ def euclidian_distance(p1, p2):
   return sqrt(sums)
 
 def check_candidates_by_distance(description, candidate_keys, r, distance_threshold = 0.1):
-  pose_keys = list(filter(lambda x: '/pose' in x, candidate_keys))
+  pose_keys = list(filter(lambda x: b'/pose' in x, candidate_keys))
   for key in pose_keys:
     db_pose = r.hgetall(key)
     pose = Pose()
-    pose.position.x = float(db_pose['px'])
-    pose.position.y = float(db_pose['py'])
-    pose.position.z = float(db_pose['pz'])
-    pose.orientation.x = float(db_pose['ox'])
-    pose.orientation.y = float(db_pose['oy'])
-    pose.orientation.z = float(db_pose['oz'])
-    pose.orientation.w = float(db_pose['ow'])
+    pose.position.x = float(db_pose[b'px'])
+    pose.position.y = float(db_pose[b'py'])
+    pose.position.z = float(db_pose[b'pz'])
+    pose.orientation.x = float(db_pose[b'ox'])
+    pose.orientation.y = float(db_pose[b'oy'])
+    pose.orientation.z = float(db_pose[b'oz'])
+    pose.orientation.w = float(db_pose[b'ow'])
 
     distance = euclidian_distance(description.pose.pose.position, pose.position)
+    print(distance)
     if distance < distance_threshold:
-      n_key = key.replace('/pose', '')
+      n_key = key.replace(b'/pose', b'')
       return n_key
   
   return None
@@ -52,7 +53,8 @@ class RecognitionWriterPlugin(WorldPlugin):
     self.topic = topic
     self.check_function = check_function
     self.approach_distance = approach_distance
-    self.transformer = tf.TransformerROS()
+    self.tfl = tf.TransformListener()
+
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
@@ -79,7 +81,15 @@ class RecognitionWriterPlugin(WorldPlugin):
     pose_stamped.pose.orientation.w = description.pose.pose.orientation.w
     
     pose_stamped_map = PoseStamped()
-    pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
+    pose_stamped_map.header = image_header
+    
+    if self.tfl.frameExists(link) and self.tfl.frameExists(image_header.frame_id):
+      pose_stamped_map.pose = self.tfl.transformPose(link, pose_stamped)
+    else:
+      rospy.logerr('One of the frames does not exist.')
+      sys.exit(0)
+
+    #pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
 
     new_header = pose_stamped_map.header
     new_description = description
@@ -100,8 +110,9 @@ class RecognitionWriterPlugin(WorldPlugin):
         description_id = '{label}/{id}'.format(
           label=description.label_class,
           id=self._generate_uid()
-        )
-      pipe.hmset(description_id + '/pose', {
+        ).encode('utf-8')
+      print(description_id)
+      pipe.hmset(description_id + b'/pose', {
         'px': description.pose.pose.position.x,
         'py': description.pose.pose.position.y,
         'pz': description.pose.pose.position.z,
@@ -110,7 +121,7 @@ class RecognitionWriterPlugin(WorldPlugin):
         'oz': description.pose.pose.orientation.z,
         'ow': description.pose.pose.orientation.w
       })
-      pipe.hmset(description_id + '/color', {
+      pipe.hmset(description_id + b'/color', {
         'r': description.color.r,
         'g': description.color.g,
         'b': description.color.b,
@@ -160,7 +171,8 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
-      #image_header, description = self._to_link(image_header, description, link=self.fixed_frame)  
+      image_header, description = self._to_link(image_header, description, link=self.fixed_frame)  
       uid = self._save_description(description)
-      #image_header, description = self._to_link(image_header, description, link='base_link')
-      self._save_target(uid, description.pose.pose)
+      #target is not tested yet
+      #image_header, description = self._to_link(image_header, description, link='footprint_link')
+      #self._save_target(uid, description.pose.pose)
