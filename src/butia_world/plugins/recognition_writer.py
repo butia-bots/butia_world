@@ -53,6 +53,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     self.topic = topic
     self.check_function = check_function
     self.approach_distance = approach_distance
+    self.source_frames = []
     self.tfl = tf.TransformListener()
 
 
@@ -81,21 +82,23 @@ class RecognitionWriterPlugin(WorldPlugin):
     pose_stamped.pose.orientation.w = description.pose.pose.orientation.w
     
     pose_stamped_map = PoseStamped()
-    pose_stamped_map.header = image_header
     
-    if self.tfl.frameExists(link) and self.tfl.frameExists(image_header.frame_id):
-      pose_stamped_map.pose = self.tfl.transformPose(link, pose_stamped)
-    else:
-      rospy.logerr('One of the frames does not exist.')
-      sys.exit(0)
+    if (image_header.frame_id, link) in self.source_frames:
+      self.tfl.waitForTransform(image_header.frame_id, link, rospy.Time(), rospy.Duration(1.0))
+      self.source_frames.append((image_header.frame_id, link))
+    try:
+      pose_stamped_map = self.tfl.transformPose(link, pose_stamped)
+    
+    except:
+      rospy.logerr('Transform does not exist.')
+      return None
 
     #pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
 
-    new_header = pose_stamped_map.header
     new_description = description
-    new_description.pose = pose_stamped_map.pose
+    new_description.pose = pose_stamped_map
 
-    return new_header, new_description 
+    return new_description 
 
   def _generate_uid(self):
     return str(uuid.uuid4())
@@ -171,8 +174,9 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _on_recognition(self, recognition):
     image_header = recognition.image_header
     for description in recognition.descriptions:
-      image_header, description = self._to_link(image_header, description, link=self.fixed_frame)  
-      uid = self._save_description(description)
+      description = self._to_link(image_header, description, link=self.fixed_frame)
+      if description is not None:
+        uid = self._save_description(description)
       #target is not tested yet
       #image_header, description = self._to_link(image_header, description, link='footprint_link')
       #self._save_target(uid, description.pose.pose)
