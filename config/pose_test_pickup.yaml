@@ -1,0 +1,51 @@
+pose:
+  targets:
+    table:
+        px: 0.75
+        py: 0.0
+        pz: 0.375
+        ox: 0.0
+        oy: 0.0
+        oz: 0.0
+        ow: 1.0
+        sx: 0.4
+        sy: 0.5
+        sz: 0.75
+    bottle:
+        px: 0.75
+        py: 0.15
+        pz: 0.95
+        ox: 0.0
+        oy: 0.0
+        oz: 0.0
+        ow: 1.0
+        sx: 0.085
+        sy: 0.085
+        sz: 0.29
+    cup:
+        px: 0.75
+        py: -0.08
+        pz: 0.88
+        ox: 0.0
+        oy: 0.0
+        oz: 0.0
+        ow: 1.0
+        sx: 0.05
+        sy: 0.05
+        sz: 0.16
+    exit:
+        px: -10.0
+        py: 0
+        pz: 0.229
+        ox: 0
+        oy: 0
+        oz: 0
+        ow: 1
+    manipulation:
+        px: 0
+        py: 0
+        pz: 0.229
+        ox: 0
+        oy: 0
+        oz: 0
+        ow: 1
