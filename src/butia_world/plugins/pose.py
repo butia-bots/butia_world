@@ -15,13 +15,13 @@ class PosePlugin(WorldPlugin):
     rospy.loginfo(self.r.keys())
     db_pose = self.r.hgetall(key)
     rospy.loginfo(db_pose)
-    pose.position.x = float(db_pose['px'])
-    pose.position.y = float(db_pose['py'])
-    pose.position.z = float(db_pose['pz'])
-    pose.orientation.x = float(db_pose['ox'])
-    pose.orientation.y = float(db_pose['oy'])
-    pose.orientation.z = float(db_pose['oz'])
-    pose.orientation.w = float(db_pose['ow'])  
+    pose.position.x = float(db_pose[b'px'])
+    pose.position.y = float(db_pose[b'py'])
+    pose.position.z = float(db_pose[b'pz'])
+    pose.orientation.x = float(db_pose[b'ox'])
+    pose.orientation.y = float(db_pose[b'oy'])
+    pose.orientation.z = float(db_pose[b'oz'])
+    pose.orientation.w = float(db_pose[b'ow'])  
     
     return pose
 
