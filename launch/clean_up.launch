@@ -3,5 +3,4 @@
     <rosparam file="$(find butia_world)/config/pose_clean_up.yaml" ns="butia_world" command="load" />
     
     <node pkg="butia_world" type="pose.py" name="pose" output="screen" />
-    <node pkg="butia_world" type="viewer_reader.py" name="viewer_reader" output="screen" /> 
 </launch>
