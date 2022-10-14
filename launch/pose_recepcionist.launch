@@ -3,4 +3,5 @@
     <rosparam file="$(find butia_world)/config/pose_recepcionist.yaml" ns="butia_world" command="load" />
     <node pkg="butia_world" type="pose.py" name="pose" output="screen"> 
     </node>
+    <node pkg="butia_world" type="viewer_reader.py" name="viewer_reader" output="screen"/> 
 </launch>
