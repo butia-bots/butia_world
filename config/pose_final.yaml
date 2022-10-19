@@ -1,6 +1,6 @@
 pose:
   targets:
-    bedroom:
+    bedroom_vision:
       px: 7.876387119293213
       py: 5.547804355621338
       pz: 0.0
@@ -8,7 +8,7 @@ pose:
       oy: 0.0
       oz: -0.9618381064015482
       ow: 0.273619182576595
-    prateleira_vision:
+    shelf_vision:
       px: 7.876387119293213
       py: 5.547804355621338
       pz: 0.0
@@ -24,7 +24,7 @@ pose:
       oy: 0.0
       oz: 0.8820507989601524
       ow: 0.4711543144806773
-    delivery:  
+    delivery_medicine_vision:  
       px: 6.449032783508301
       py: 5.469845771789551
       pz: 0.0
