@@ -1,7 +1,6 @@
 # butia_world
 
-Implements plugins that manage and filter information coming from sensors to a
-centralized world representation
+Implements plugins that manage and filter information coming from sensors to a centralized world representation
 
 ### Plugins
 
