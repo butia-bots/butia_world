@@ -45,8 +45,8 @@ pose:
         oy: 0.0
         oz: -0.41704965586895637
         ow: 0.9088837024281957
-    #prateleira itec
-    bottle:
+    #prateleira itec gabriel
+    prateleira_itec:
       px: 1.6100788208670305
       py: -0.280926822372318
       pz: 0.0
@@ -54,7 +54,8 @@ pose:
       oy: 0.0
       oz: -0.012354080027789436
       ow: 0.9999236854413776
-    prateleira_itec_release:
+    #prateleira itec edom 
+    bottle:
       px: 2.9920886227690504
       py: -0.06763647534291466
       pz: 0.8708010692427652
