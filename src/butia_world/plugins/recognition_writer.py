@@ -12,6 +12,11 @@ from math import sqrt, atan2, cos, sin, pi
 
 from .world_plugin import WorldPlugin
 
+import chromadb
+from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
+
+import ros_numpy
+
 
 def euclidian_distance(p1, p2):
   sums = (p2.x - p1.x)**2 + (p2.y - p1.y)**2 + (p2.z - p1.z)**2
@@ -55,14 +60,16 @@ class RecognitionWriterPlugin(WorldPlugin):
     self.approach_distance = approach_distance
     self.source_frames = []
     self.tfl = tf.TransformListener()
-
+    self.embedding_function = OpenCLIPEmbeddingFunction()
+    self.chroma_client = chromadb.PersistentClient()
+    self.chroma_collection = self.chroma_client.get_or_create_collection(name="world-objects", embedding_function=self.embedding_function)
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
     rospy.spin()
 
   def _must_update(self, description):
-    candidate_keys = self.r.keys(pattern=description.label_class + '*')
+    candidate_keys = self.r.keys(pattern=description.label + '*')
     if len(candidate_keys) == 0:
       return None
     
@@ -73,13 +80,13 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _to_link(self, image_header, description, link='map'):
     pose_stamped = PoseStamped()
     pose_stamped.header = image_header
-    pose_stamped.pose.position.x = description.pose.pose.position.x
-    pose_stamped.pose.position.y = description.pose.pose.position.y
-    pose_stamped.pose.position.z = description.pose.pose.position.z
-    pose_stamped.pose.orientation.x = description.pose.pose.orientation.x
-    pose_stamped.pose.orientation.y = description.pose.pose.orientation.y
-    pose_stamped.pose.orientation.z = description.pose.pose.orientation.z
-    pose_stamped.pose.orientation.w = description.pose.pose.orientation.w
+    pose_stamped.pose.position.x = description.bbox.center.position.x
+    pose_stamped.pose.position.y = description.bbox.center.position.y
+    pose_stamped.pose.position.z = description.bbox.center.position.z
+    pose_stamped.pose.orientation.x = description.bbox.center.orientation.x
+    pose_stamped.pose.orientation.y = description.bbox.center.orientation.y
+    pose_stamped.pose.orientation.z = description.bbox.center.orientation.z
+    pose_stamped.pose.orientation.w = description.bbox.center.orientation.w
     
     pose_stamped_map = PoseStamped()
     
@@ -103,7 +110,7 @@ class RecognitionWriterPlugin(WorldPlugin):
   def _generate_uid(self):
     return str(uuid.uuid4())
   
-  def _save_description(self, description):
+  def _save_description(self, description, image_rgb):
     d_id = self._must_update(description)
 
     with self.r.pipeline() as pipe:
@@ -111,26 +118,31 @@ class RecognitionWriterPlugin(WorldPlugin):
         description_id = d_id
       else:
         description_id = '{label}/{id}'.format(
-          label=description.label_class,
+          label=description.label,
           id=self._generate_uid()
         ).encode('utf-8')
       print(description_id)
       pipe.hmset(description_id + b'/pose', {
-        'px': description.pose.pose.position.x,
-        'py': description.pose.pose.position.y,
-        'pz': description.pose.pose.position.z,
-        'ox': description.pose.pose.orientation.x,
-        'oy': description.pose.pose.orientation.y,
-        'oz': description.pose.pose.orientation.z,
-        'ow': description.pose.pose.orientation.w
+        'px': description.bbox.center.position.x,
+        'py': description.bbox.center.position.y,
+        'pz': description.bbox.center.position.z,
+        'ox': description.bbox.center.orientation.x,
+        'oy': description.bbox.center.orientation.y,
+        'oz': description.bbox.center.orientation.z,
+        'ow': description.bbox.center.orientation.w
       })
-      pipe.hmset(description_id + b'/color', {
+      '''pipe.hmset(description_id + b'/color', {
         'r': description.color.r,
         'g': description.color.g,
         'b': description.color.b,
         'a': description.color.a
-      })
+      })'''
       pipe.execute()
+      if image_rgb != None:
+        self.chroma_collection.add(
+          ids=[description_id.decode('utf-8'),],
+          images=[ros_numpy.numpify(image_rgb)[int(description.bbox2D.center.y-description.bbox2D.size_y//2):int(description.bbox2D.center.y+description.bbox2D.size_y//2),int(description.bbox2D.center.x-description.bbox2D.size_x//2):int(description.bbox2D.center.x+description.bbox2D.size_x//2)],]
+        )
     return d_id
 
   def _save_target(self, uid, pose):
@@ -172,11 +184,12 @@ class RecognitionWriterPlugin(WorldPlugin):
       })
 
   def _on_recognition(self, recognition):
-    image_header = recognition.image_header
+    image_header = recognition.image_rgb.header
     for description in recognition.descriptions:
+      rospy.loginfo(description)
       description = self._to_link(image_header, description, link=self.fixed_frame)
       if description is not None:
-        uid = self._save_description(description)
+        uid = self._save_description(description, image_rgb=recognition.image_rgb)
       #target is not tested yet
       #image_header, description = self._to_link(image_header, description, link='footprint_link')
       #self._save_target(uid, description.pose.pose)

@@ -9,11 +9,15 @@ from geometry_msgs.msg import Pose, PoseStamped, Vector3
 
 from math import sqrt
 
+import chromadb
+from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
+
 class PosePlugin(WorldPlugin):
   def readPose(self, key):
     pose = Pose()
     rospy.loginfo(self.r.keys())
     db_pose = self.r.hgetall(key)
+    rospy.loginfo(key)
     rospy.loginfo(db_pose)
     pose.position.x = float(db_pose[b'px'])
     pose.position.y = float(db_pose[b'py'])
@@ -38,7 +42,7 @@ class PosePlugin(WorldPlugin):
     return size
 
   def setStaticPose(self):
-    poses = rospy.get_param('/butia_world/pose/targets')
+    poses = rospy.get_param('/butia_world/pose/targets', {})
     with self.r.pipeline() as pipe:
       for p_id, pose in poses.items():
         print(pose)
@@ -49,6 +53,10 @@ class PosePlugin(WorldPlugin):
   def getClosestKey(self, req):
     query = req.query
     keys = self.r.keys(query)
+    if len(keys) == 0:
+      results = self.chroma_collection.query(query_texts=[query,])
+      rospy.loginfo(results)
+      keys = [f'{results["ids"][i]}/pose' for i in range(len(results['ids'])) if results["distances"][i][0] < 1.0 - req.threshold]
     rospy.loginfo(keys)
     keys = list(filter(lambda x: '/pose' in x and 'target' not in x, keys))
     rospy.loginfo(keys)
@@ -69,10 +77,12 @@ class PosePlugin(WorldPlugin):
         min_distance = distance
         min_key = key
     
+    if min_key == None:
+      return GetKeyResponse(success=False)
     min_key = min_key.replace('/pose', '')
     rospy.loginfo("Key: " + min_key)
 
-    return GetKeyResponse(min_key)
+    return GetKeyResponse(key=min_key, success=True)
 
   def getPose(self, req):
     key = req.key
@@ -86,6 +96,9 @@ class PosePlugin(WorldPlugin):
     return res
 
   def run(self):
+    self.embedding_function = OpenCLIPEmbeddingFunction()
+    self.chroma_client = chromadb.PersistentClient()
+    self.chroma_collection = self.chroma_client.get_or_create_collection(name="world-objects", embedding_function=self.embedding_function)
     self.setStaticPose()
     self.closest_key_server = rospy.Service('/butia_world/get_closest_key', GetKey, self.getClosestKey)
     self.pose_server = rospy.Service('/butia_world/get_pose', GetPose, self.getPose)
