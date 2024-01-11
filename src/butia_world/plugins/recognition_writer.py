@@ -12,10 +12,24 @@ from math import sqrt, atan2, cos, sin, pi
 
 from .world_plugin import WorldPlugin
 
-import chromadb
-from chromadb.utils.embedding_functions import OpenCLIPEmbeddingFunction
+import weaviate
+import weaviate.classes as wvc
 
 import ros_numpy
+from PIL import Image
+
+import base64
+from io import BytesIO
+
+from threading import Event
+
+from std_srvs.srv import Empty
+
+def toBase64(img: Image.Image):
+  buffered = BytesIO()
+  img.save(buffered, format="JPEG")
+  img_str = base64.b64encode(buffered.getvalue())
+  return img_str
 
 
 def euclidian_distance(p1, p2):
@@ -35,7 +49,7 @@ def check_candidates_by_distance(description, candidate_keys, r, distance_thresh
     pose.orientation.z = float(db_pose[b'oz'])
     pose.orientation.w = float(db_pose[b'ow'])
 
-    distance = euclidian_distance(description.pose.pose.position, pose.position)
+    distance = euclidian_distance(description.bbox.center.position, pose.position)
     print(distance)
     if distance < distance_threshold:
       n_key = key.replace(b'/pose', b'')
@@ -60,9 +74,17 @@ class RecognitionWriterPlugin(WorldPlugin):
     self.approach_distance = approach_distance
     self.source_frames = []
     self.tfl = tf.TransformListener()
-    self.embedding_function = OpenCLIPEmbeddingFunction()
-    self.chroma_client = chromadb.PersistentClient()
-    self.chroma_collection = self.chroma_client.get_or_create_collection(name="world-objects", embedding_function=self.embedding_function)
+    self.vector_client = weaviate.connect_to_local()
+    self.must_remove_trigger = Event()
+    self.must_remove_trigger.clear()
+    self.must_remove_srv = rospy.Service("/butia_world/trigger_remove", Empty, lambda req: self.must_remove_trigger.set())
+    if not self.vector_client.collections.exists("WorldObjects"):
+      self.vector_collection = self.vector_client.collections.create(
+        name="WorldObjects",
+        vectorizer_config=wvc.Configure.Vectorizer.multi2vec_clip(image_fields=["image"]),
+      )
+    else:
+      self.vector_collection = self.vector_client.collections.get("WorldObjects")
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
@@ -91,7 +113,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     pose_stamped_map = PoseStamped()
     
     if (image_header.frame_id, link) in self.source_frames:
-      self.tfl.waitForTransform(image_header.frame_id, link, rospy.Time(), rospy.Duration(1.0))
+      self.tfl.waitForTransform(link, image_header.frame_id, rospy.Time(), rospy.Duration(1.0))
       self.source_frames.append((image_header.frame_id, link))
     try:
       pose_stamped_map = self.tfl.transformPose(link, pose_stamped)
@@ -103,7 +125,8 @@ class RecognitionWriterPlugin(WorldPlugin):
     #pose_stamped_map = self.transformer.transformPose(link, pose_stamped)
 
     new_description = description
-    new_description.pose = pose_stamped_map
+    new_description.bbox.center.position = pose_stamped_map.pose.position
+    new_description.bbox.center.orientation = pose_stamped_map.pose.orientation
 
     return new_description 
 
@@ -112,7 +135,6 @@ class RecognitionWriterPlugin(WorldPlugin):
   
   def _save_description(self, description, image_rgb):
     d_id = self._must_update(description)
-
     with self.r.pipeline() as pipe:
       if d_id:
         description_id = d_id
@@ -121,6 +143,13 @@ class RecognitionWriterPlugin(WorldPlugin):
           label=description.label,
           id=self._generate_uid()
         ).encode('utf-8')
+        if image_rgb != None:
+          self.vector_collection.data.insert(
+            properties={
+              "image": toBase64(Image.fromarray(ros_numpy.numpify(image_rgb)[int(description.bbox2D.center.y-description.bbox2D.size_y//2):int(description.bbox2D.center.y+description.bbox2D.size_y//2),int(description.bbox2D.center.x-description.bbox2D.size_x//2):int(description.bbox2D.center.x+description.bbox2D.size_x//2)][:,:,::-1])).decode(),
+              "worldKey": description_id.decode()
+            },
+          )
       print(description_id)
       pipe.hmset(description_id + b'/pose', {
         'px': description.bbox.center.position.x,
@@ -129,7 +158,11 @@ class RecognitionWriterPlugin(WorldPlugin):
         'ox': description.bbox.center.orientation.x,
         'oy': description.bbox.center.orientation.y,
         'oz': description.bbox.center.orientation.z,
-        'ow': description.bbox.center.orientation.w
+        'ow': description.bbox.center.orientation.w,
+        'sx': description.bbox.size.x,
+        'sy': description.bbox.size.y,
+        'sz': description.bbox.size.z,
+        'stamp': rospy.Time.now().to_sec()
       })
       '''pipe.hmset(description_id + b'/color', {
         'r': description.color.r,
@@ -138,11 +171,6 @@ class RecognitionWriterPlugin(WorldPlugin):
         'a': description.color.a
       })'''
       pipe.execute()
-      if image_rgb != None:
-        self.chroma_collection.add(
-          ids=[description_id.decode('utf-8'),],
-          images=[ros_numpy.numpify(image_rgb)[int(description.bbox2D.center.y-description.bbox2D.size_y//2):int(description.bbox2D.center.y+description.bbox2D.size_y//2),int(description.bbox2D.center.x-description.bbox2D.size_x//2):int(description.bbox2D.center.x+description.bbox2D.size_x//2)],]
-        )
     return d_id
 
   def _save_target(self, uid, pose):
@@ -182,14 +210,56 @@ class RecognitionWriterPlugin(WorldPlugin):
         'oz': npose.orientation.z,
         'ow': npose.orientation.w
       })
+    
+  def _remove_unavailable_descriptions(self, image_header, descriptions, distance_threshold=0.1):
+    link = image_header.frame_id
+    keys = self.r.keys(pattern="*/pose")
+    keys = [k for k in keys if not k.startswith(b"target/")]
+    keys_not_in_area = set(keys)
+    for key in list(keys_not_in_area):
+      data = self.r.hgetall(key)
+      ps = PoseStamped()
+      ps.header.frame_id = "map"
+      ps.pose.position.x = data[b'px']
+      ps.pose.position.y = data[b'py']
+      ps.pose.position.z = data[b'pz']
+      ps.pose.orientation.x = data[b'ox']
+      ps.pose.orientation.y = data[b'oy']
+      ps.pose.orientation.z = data[b'oz']
+      ps.pose.orientation.w = data[b'ow']
+      stamp = float(data[b'stamp'])
+      self.tfl.waitForTransform(image_header.frame_id, ps.header.frame_id, rospy.Time(), rospy.Duration(1.0))
+      try:
+        ps = self.tfl.transformPose(image_header.frame_id, ps)
+      except:
+        continue
+      if abs(ps.pose.position.x) < 1.0 and abs(ps.pose.position.y) < 1.0 and ps.pose.position.z > 1.5:
+        for description in descriptions:
+          if euclidian_distance(ps.pose.position, description.bbox.center.position) < distance_threshold or rospy.Time.now() - rospy.Time.from_sec(stamp) < rospy.Duration(5.0):
+            if key in keys_not_in_area:
+              keys_not_in_area.remove(key)
+      else:
+        keys_not_in_area.remove(key)
+    world_keys_not_in_area = [k.strip(b"/pose") for k in list(keys_not_in_area)]
+    for obj in self.vector_collection.query.fetch_objects().objects:
+      if obj.properties['worldKey'].encode('utf-8') in world_keys_not_in_area:
+        self.vector_collection.data.delete_by_id(obj.uuid)
+    with self.r.pipeline() as pipe:
+      for key in list(keys_not_in_area):
+        pipe.delete(key)
+      pipe.execute()
 
   def _on_recognition(self, recognition):
     image_header = recognition.image_rgb.header
+    if self.must_remove_trigger.is_set():
+      self._remove_unavailable_descriptions(image_header, recognition.descriptions)
+      self.must_remove_trigger.clear()
     for description in recognition.descriptions:
       rospy.loginfo(description)
-      description = self._to_link(image_header, description, link=self.fixed_frame)
-      if description is not None:
-        uid = self._save_description(description, image_rgb=recognition.image_rgb)
-      #target is not tested yet
-      #image_header, description = self._to_link(image_header, description, link='footprint_link')
-      #self._save_target(uid, description.pose.pose)
+      if description.bbox.size.x > 0.1 or description.bbox.size.y > 0.1 or description.bbox.size.z > 0.1:
+        description = self._to_link(image_header, description, link=self.fixed_frame)
+        if description is not None:
+          uid = self._save_description(description, image_rgb=recognition.image_rgb)
+        #target is not tested yet
+        #image_header, description = self._to_link(image_header, description, link='footprint_link')
+        #self._save_target(uid, description.pose.pose)
