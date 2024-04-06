@@ -59,6 +59,7 @@ class RecognitionWriterPlugin(WorldPlugin):
 
   def run(self):
     self.subscriber = rospy.Subscriber(self.topic, Recognitions3D, self._on_recognition)
+    rospy.loginfo('RecognitionWriterPlugin running...')
     rospy.spin()
 
   def _must_update(self, description):
