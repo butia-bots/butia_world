@@ -5,5 +5,5 @@ from butia_world.plugins.pose import PosePlugin
 from butia_world.plugins.viewer_reader import ViewerReaderPlugin
 from butia_world.plugins.recognition_writer import *
 from butia_world.plugins.redis_cache_writer import RedisCacheWriter
-from butia_world.plugins.redis_cache_writer import RedisCacheReader
+from butia_world.plugins.redis_cache_reader import RedisCacheReader
 from butia_world.plugins.world_plugin_async import WorldPluginAsync

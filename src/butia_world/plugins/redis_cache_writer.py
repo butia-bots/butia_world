@@ -1,55 +1,49 @@
 import rospy
-from butia_vision_msgs.msg import FaceEncoding
+import uuid
+from butia_vision_msgs.msg import FaceEncoding, FaceDescription
+from std_msgs.msg import Header
+from butia_world_msgs.srv import RedisCacheWriterSrv, RedisCacheReaderSrv
 
-from .world_plugin import WorldPlugin, RedisCacheReader
+from .world_plugin import WorldPlugin
 
 class RedisCacheWriter(WorldPlugin):
 
-    def __init__(self, topic):
+    def __init__(self):
         WorldPlugin.__init__(self)
-        self.topic = topic
         self.cache = {}
 
     def run(self):
-        self.subscriber = rospy.Subscriber(self.topic, FaceEncoding, self._on_recognition)
-        rospy.loginfo('RedisCachePlugin running...')
+        rospy.Service('redis_cache_writer_srv', RedisCacheWriterSrv, self._on_recognition)
         rospy.spin()
+        
+    def _generate_uid(self):
+        return str(uuid.uuid4())
     
-    def _getDataFromRedis(self, pattern = 'faces:*'):
-        cursor = 0
-        keys_count = 0
-
-        # Scan keys matching the pattern "faces:*"
-        while True:
-            cursor, keys = self.r.scan(cursor, match=pattern)
-            keys_count += len(keys)
-            for key in keys:
-                hash_value = self.r.hgetall(key)
-                self.cache[key] = hash_value
-            if cursor == 0:
-                break
-        return keys_count
-
-    def _sendToCache(self):
-        reader = RedisCacheReader(self.topic)
-        reader.run()
-    
-    def _toCompose(self, data):
+    def _toCompose(self, request):
         composed = {}
-        for description in data.descriptions:
-            print(description.label)
-            composed['label'] = description.label
-            composed['face_encoding'] = description.encoding
-        return self._pushToRedis(composed)
+        data = request.description
+        for item in data.descriptions:
+            composed['label'] = item.label
+            composed['face_encode'] = item.encoding
+        return composed
     
     def _pushToRedis(self, data):
-        new_key = self._get_last_key() + 1
-        print(new_key)
-        id = 'faces:{last_key}'.format(last_key=new_key).encode('utf-8')
-        with self.r.pipeline() as pipe:
-            pipe.hmset(id, data)
-            pipe.execute()
-        return self._sendToCache()
+        description_id = '{label}:{id}'.format(
+                label='faces',
+                id=self._generate_uid()
+            ).encode('utf-8')
+        try:
+            self.r.hset(description_id, 'content', str(data))
+        except Exception as e:
+            rospy.logerr(e)
+        return 
   
-    def _on_recognition(self, recognition):
-        return self._toCompose(recognition)
+    def _on_recognition(self, request):
+        try:
+            composed = self._toCompose(request)
+            self._pushToRedis(composed)
+            rospy.loginfo('Data pushed to Redis')
+            return True
+        except Exception as e:
+            rospy.logerr(e)
+            return False
