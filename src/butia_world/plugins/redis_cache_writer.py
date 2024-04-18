@@ -1,8 +1,6 @@
 import rospy
 import uuid
-from butia_vision_msgs.msg import FaceEncoding, FaceDescription
-from std_msgs.msg import Header
-from butia_world_msgs.srv import RedisCacheWriterSrv, RedisCacheReaderSrv
+from butia_world_msgs.srv import RedisCacheWriterSrv
 
 from .world_plugin import WorldPlugin
 
@@ -22,9 +20,10 @@ class RedisCacheWriter(WorldPlugin):
     def _toCompose(self, request):
         composed = {}
         data = request.description
+        composed['face_encode'] = []
         for item in data.descriptions:
             composed['label'] = item.label
-            composed['face_encode'] = item.encoding
+            composed['face_encode'].append(item.encoding)
         return composed
     
     def _pushToRedis(self, data):

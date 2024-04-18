@@ -4,7 +4,6 @@ from std_msgs.msg import Header
 from butia_world_msgs.srv import RedisCacheReaderSrv
 
 from .world_plugin import WorldPlugin
-
 class RedisCacheReader(WorldPlugin):
 
     def __init__(self):
@@ -13,21 +12,21 @@ class RedisCacheReader(WorldPlugin):
         
     def run(self):
         rospy.Service('redis_cache_reader_srv', RedisCacheReaderSrv, self.getFromRedisCache)
+        rospy.loginfo('Cache is being updated')
         #self._getDataFromRedis()
         rospy.spin()
         
     def getFromRedisCache(self, request):
         data = self._getDataFromRedis()
         return data
+    
         
     def _getDataFromRedis(self, pattern = 'faces:*'):
         cursor = 0
         # Scan keys matching the pattern "faces:*"
         while True:
             count, keys = self.r.scan(cursor, match=pattern)
-            #rospy.loginfo(f'Keys found:{count}')
             for key in keys:
-                #rospy.loginfo(f'Keys found:{key}')
                 hash_value = self.r.hgetall(key)
                 self.cache[key] = hash_value
             cursor = count
@@ -43,23 +42,21 @@ class RedisCacheReader(WorldPlugin):
         redis_cache.header = h
         
         for key, item in self.cache.items():
-            description = FaceDescription()
+            item_str = {k.decode('utf-8'): v for k, v in item.items()}
+            content_dict = eval(item_str['content'])  # Convert string to dictionary
+            label = content_dict['label']
+            encodings = content_dict['face_encode']
             
             h = Header()
             h.stamp = rospy.Time.now()
             h.frame_id = key.decode('utf-8')
             
-            description.header = h
-            
-            # Decode bytes to string before using them as keys
-            item_str = {k.decode('utf-8'): v for k, v in item.items()}
-            content_dict = eval(item_str['content'])  # Convert string to dictionary
-            description.label = content_dict['label']
-            description.encoding = content_dict['face_encode']
-            for i in range(10):
-                if content_dict['label'] == f'test{i}':
-                    print(h.frame_id)
-            
-            redis_cache.descriptions.append(description)
+            for encoding in encodings:
+                description = FaceDescription()
+                description.header = h
+                description.global_id = key.decode('utf-8')
+                description.label = label
+                description.encoding = encoding
+                redis_cache.descriptions.append(description)
             
         return redis_cache
