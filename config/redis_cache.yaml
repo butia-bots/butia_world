@@ -1,0 +1,2 @@
+redis_cache:
+  topic: /butia_vision/r/redis_cache
