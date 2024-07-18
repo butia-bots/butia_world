@@ -64,7 +64,7 @@ pose:
       oy: 0.0
       oz: 0.9972574965222382
       ow: 0.07401003736114614
-    balcao: # Pose entre balcao e dish mapa B
+    balcao:
       px: 8.344921112060547
       py: 4.201112270355225
       pz: 0.0
@@ -80,7 +80,7 @@ pose:
       oy: 0.0
       oz: 0.9999983864015903
       ow: 0.0017964393158957735
-    balcao2: # Pose entre balcao e dish mapa C
+    balcao2:
       px: 8.330974578857422
       py: 3.8495635986328125
       pz: 0.0
