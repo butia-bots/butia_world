@@ -13,6 +13,6 @@ if __name__ == '__main__':
                         'distance_threshold' : distance_threshold
                     }
                    }
-  topic = rospy.get_param('/butia_world/object_recognition/topic', '/butia_vision/or/object_recognition3d')
+  topic = rospy.get_param('/butia_world/object_recognition/topic', '/butia_vision/br/object_recognition3d')
   plugin = RecognitionWriterPlugin(topic, check_function)
   plugin.run()
