@@ -1,0 +1,8 @@
+prefix=/home/fbotathome/fbot_ws/src/butia_world/build/devel
+
+Name: butia_world
+Description: Description of butia_world
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 
