@@ -3,7 +3,7 @@
 import rospy
 import yaml
 import os
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped
 from collections import OrderedDict
 
 
@@ -40,12 +40,12 @@ class PoseWriter:
 
         self.yaml_path = self.config_path + '/' + self.yaml_file
 
-        self.pose_topic = rospy.get_param('~pose_topic', '/amcl_pose') 
+        self.pose_topic = rospy.get_param('~pose_topic', 'amcl_pose') 
 
-        self.pose_sub = rospy.Subscriber(self.pose_topic, PoseStamped, self.pose_callback)
+        self.pose_sub = rospy.Subscriber(self.pose_topic, PoseWithCovarianceStamped, self.pose_callback)
 
     def pose_callback(self, msg):
-        self.current_pose = msg.pose
+        self.current_pose = msg.pose.pose
 
     def save_pose(self):
         '''
@@ -80,6 +80,7 @@ class PoseWriter:
                 if save_now == 'n':
                     self.write_to_yaml()
                     rospy.signal_shutdown(f"Poses saved to {self.yaml_file}. Shutting down node.")
+
                 elif save_now == 'y':
                     break
                 else:
@@ -88,10 +89,10 @@ class PoseWriter:
     def write_to_yaml(self):
         OrderedDumper.add_representer(OrderedDict, OrderedDumper.represent_ordereddict)
 
-        if os.path.exists(self.yaml_file):
+        if os.path.exists(self.yaml_path):
             rospy.loginfo(f"{self.yaml_file} already exists. The new poses will be appended to the existing data.")
 
-            with open(self.yaml_file, 'r') as yaml_file:
+            with open(self.yaml_path, 'r') as yaml_file:
                 try:
                     existing_data = yaml.load(yaml_file, Loader=OrderedLoader) or OrderedDict()
                 except yaml.YAMLError as e:
@@ -106,9 +107,10 @@ class PoseWriter:
 
         existing_data['pose']['targets'].update(self.poses['pose']['targets'])
 
-        with open(self.yaml_file, 'w') as yaml_file:
+        with open(self.yaml_path, 'w') as yaml_file:
              yaml.dump(existing_data, yaml_file, default_flow_style=False, Dumper=OrderedDumper)
-
+             
+        return
 if __name__ == '__main__':
     try:
         saver = PoseWriter()
