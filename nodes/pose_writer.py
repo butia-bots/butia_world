@@ -79,7 +79,8 @@ class PoseWriter:
                 save_now = input("Do you want to add more poses? (y/n): ").lower()
                 if save_now == 'n':
                     self.write_to_yaml()
-                    rospy.signal_shutdown(f"Poses saved to {self.yaml_file}. Shutting down node.")
+                    rospy.loginfo(f"Poses saved to {self.yaml_file}. Shutting down node.")
+                    return
 
                 elif save_now == 'y':
                     break
