@@ -1,7 +1,0 @@
-set(butia_world_SETUP_PY_SETUP_MODULE "distutils.core")
-set(butia_world_SETUP_PY_VERSION "0.0.0")
-set(butia_world_SETUP_PY_SCRIPTS "")
-set(butia_world_SETUP_PY_PACKAGES "butia_world")
-set(butia_world_SETUP_PY_PACKAGE_DIRS "src/butia_world")
-set(butia_world_SETUP_PY_MODULES "")
-set(butia_world_SETUP_PY_MODULE_DIRS "")
