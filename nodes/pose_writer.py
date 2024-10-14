@@ -6,6 +6,11 @@ import os
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from collections import OrderedDict
 
+'''
+Save the current pose in the specified topic to a yaml file.
+Created by Gabriel Dorneles on 2024-10-06.
+'''
+
 
 class OrderedDumper(yaml.SafeDumper):
     def represent_ordereddict(self, data):
