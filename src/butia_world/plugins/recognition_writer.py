@@ -13,7 +13,7 @@ from math import sqrt, atan2, cos, sin, pi
 from .world_plugin import WorldPlugin
 
 import weaviate
-import weaviate.classes as wvc
+# import weaviate.classes as wvc
 
 import ros_numpy
 from PIL import Image
@@ -81,7 +81,7 @@ class RecognitionWriterPlugin(WorldPlugin):
     if not self.vector_client.collections.exists("WorldObjects"):
       self.vector_collection = self.vector_client.collections.create(
         name="WorldObjects",
-        vectorizer_config=wvc.Configure.Vectorizer.multi2vec_clip(image_fields=["image"]),
+        vectorizer_config=weaviate.Configure.Vectorizer.multi2vec_clip(image_fields=["image"]),
       )
     else:
       self.vector_collection = self.vector_client.collections.get("WorldObjects")
